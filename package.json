@@ -2,7 +2,7 @@
   "dependencies": {
     "@miniflare/kv": "^2.4.0",
     "@miniflare/storage-memory": "^2.4.0",
-    "discord.js": "^12.5.3",
+    "discord.js": "^13.6.0",
     "dotenv": "^16.0.0",
     "ws": "^8.5.0"
   },

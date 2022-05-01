@@ -2,9 +2,17 @@ import 'dotenv/config';
 
 import WebSocket from 'ws';
 
-import Discord from 'discord.js';
+import Discord, { MessageReaction, MessageSelectMenu } from 'discord.js';
 
-const client = new Discord.Client();
+import {
+  getGuildedMember,
+  sendGuildedMessage,
+  sendGuildedMessageEmbed,
+} from './fetch.js';
+
+const client = new Discord.Client({
+  intents: Object.values(Discord.Intents.FLAGS),
+});
 
 const socket = new WebSocket('wss://api.guilded.gg/v1/websocket', {
   headers: {
@@ -30,47 +38,22 @@ socket.on('open', function () {
 });
 
 client.on('message', async (message) => {
-  if(message.author.bot) {
+  if (message.author.bot) {
     return;
-  } else if (message.channel.type == 'text') {
+  } else if (message.content.startsWith('!guilded')) {
+    const commands = message.content.split(' ');
+    if (commands[1] == 'join') {
+      discordChannel.put(commands[2], message.channelId);
+      guildedChannel.put(message.channelId, commands[2]);
+      message.reply('joined guilded channel');
+    }
+  } else {
     var channelIdGuilded = await guildedChannel.get(message.channel.id);
-    // console.log(channelIdGuilded);
     if (channelIdGuilded) {
-      console.log(
-        await fetch(
-          `https://guilded.gg/api/v1/channels/${channelIdGuilded}/messages`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              isSilent: true,
-              embeds: [
-                {
-                  content: 'a',
-                  author: {
-                    name: message.author.username,
-                    icon_url: message.author.avatarURL,
-                  },
-                  description: message.cleanContent,
-                },
-              ],
-            }),
-            headers: {
-              Accept: 'application/json',
-              Authorization: `Bearer ${process.env.GUILDED_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        )
-      );
+      await sendGuildedMessageEmbed(channelIdGuilded, message);
     } else {
       return;
     }
-  } else if (message.channel.type == 'dm') {
-    var channelIDs = message.cleanContent.split('||');
-    discordChannel.put(channelIDs[0], channelIDs[1]);
-    guildedChannel.put(channelIDs[1], channelIDs[0]);
-  } else {
-    return;
   }
 });
 
@@ -78,30 +61,45 @@ socket.on('message', async function incoming(data) {
   const { t, d } = JSON.parse(data);
   if (t === 'ChatMessageCreated') {
     const channelIdDiscord = await discordChannel.get(d.message.channelId);
-    if (channelIdDiscord) {
+    if (d.message.content.startsWith('!discord')) {
+      const commands = d.message.content.split(' ');
+      if (commands[1] == 'join') {
+        discordChannel.put(d.message.channelId, commands[2]);
+        guildedChannel.put(commands[2], d.message.channelId);
+        sendGuildedMessage(d.message.channelId, 'joined discord channel');
+      }
+    } else if (channelIdDiscord) {
+      if (d.message.createdBy == '4vEv8eEA') return;
       try {
-        let member = await (
-          await fetch(
-            `https://guilded.gg/api/v1/servers/${d.serverId}/members/${d.message.createdBy}`,
-            {
-              headers: {
-                Accept: 'application/json',
-                Authorization: `Bearer ${process.env.GUILDED_TOKEN}`,
-                'Content-Type': 'application/json',
+        let attachmentUrls = '';
+        let fields =[];
+        d.message.content.match(/\n?!\[\]\((.*)\)\n?/gm)?.map((item) => {
+          let matchd = item.match(/\((.*)\)/gm)[0]
+          attachmentUrls = `${attachmentUrls}\n${matchd.substring(1, matchd.length-1)}`;
+          if (attachmentUrls) {
+            fields = [
+              {
+                name: 'Attachments',
+                value: attachmentUrls,
               },
-            }
-          )
-        ).json();
+            ];
+          }
+        });
+        let member = await getGuildedMember(d);
         client.channels.cache.get(channelIdDiscord).send({
-          embed: {
-            description: d.message.content,
-            author: {
-              name: member.member.user.name,
-            },
-          },
+          embeds: [
+            new Discord.MessageEmbed()
+              .setAuthor({
+                name: member.user.name,
+                iconURL: member.user.avatar,
+              })
+              .setDescription(
+                d.message.content.replace(/\n?!\[\]\((.*)\)\n?/gm, '')
+              ).setFields(fields)
+          ],
         });
       } catch (e) {
-        console.log(e);
+        console.log(`guilded to discord error: ${e.message}`);
       }
     } else {
       return;
