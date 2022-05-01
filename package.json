@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "@miniflare/kv": "^2.4.0",
+    "@miniflare/storage-memory": "^2.4.0",
+    "discord.js": "^12.5.3",
+    "dotenv": "^16.0.0",
+    "ws": "^8.5.0"
+  },
+  "type": "module"
+}
