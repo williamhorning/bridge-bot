@@ -9,7 +9,7 @@
 
 ### Docker
 
-Docker support is coming soon.
+1. Run `docker-compose up -d`
 
 ### Manual Setup
 
