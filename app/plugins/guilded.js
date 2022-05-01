@@ -4,6 +4,8 @@ import WebSocket from 'ws'; // used for websocket connection to Guilded
 
 import EventEmitter from 'events';
 
+import commandHandler from '../commandHandler.js';
+
 async function sendGuildedMessage(channelid, content) {
   await (
     await fetch(
@@ -60,15 +62,7 @@ export default class GuildedBridge extends EventEmitter {
         if (t == 'ChatMessageCreated') {
           const bridgeID = await kv.get(`guilded-${d.message.channelId}`);
           if (d.message.content.startsWith('!bridge')) {
-            const commands = d.message.content.split(' ');
-            if (commands[1] == 'join') {
-              kv.put(`guilded-${commands[2]}`, d.message.channelId);
-              kv.put(`guilded-${d.message.channelId}`, commands[2]);
-              await sendGuildedMessage(
-                d.message.channelId,
-                `Joined bridge ${commands[2]}`
-              );
-            }
+            return await commandHandler(kv, async(str)=>{ await sendGuildedMessage(d.message.channelId, str)}, d.message.channelId, 'guilded', d.message.content);
           } else if (bridgeID) {
             if (d.message.createdBy == process.env.GUILDED_ID) return;
             try {
@@ -90,7 +84,7 @@ export default class GuildedBridge extends EventEmitter {
                 }
               });
               let member = await getGuildedMember(d);
-              this.emit(
+              return this.emit(
                 'message',
                 bridgeID,
                 member.user.name,

@@ -4,6 +4,8 @@ import Discord from 'discord.js'; // used for connection to Discord
 
 import EventEmitter from 'events';
 
+import commandHandler from '../commandHandler.js';
+
 export default class DiscordBridge extends EventEmitter {
   constructor() {
     super();
@@ -22,16 +24,11 @@ export default class DiscordBridge extends EventEmitter {
       if (message.author.id == process.env.DISCORD_ID) {
         return;
       } else if (message.content.startsWith('!bridge')) {
-        const commands = message.content.split(' ');
-        if (commands[1] == 'join') {
-          kv.put(`discord-${commands[2]}`, message.channelId);
-          kv.put(`discord-${message.channelId}`, commands[2]);
-          message.reply(`Joined bridge ${commands[2]}`);
-        }
+        return await commandHandler(kv, (str)=>{message.channel.send(str)}, message.channelId, 'discord', message.content);
       } else {
         if (bridgeID) {
           let attachmentUrls = '';
-          let fields;
+          let fields = [];
           if (message.attachments) {
             message.attachments.map(({ url }) => {
               attachmentUrls = `${attachmentUrls}\n${url}`;
@@ -43,11 +40,18 @@ export default class DiscordBridge extends EventEmitter {
                   value: attachmentUrls,
                 },
               ];
-            } else {
-              fields = [];
             }
           }
-          this.emit(
+          if (message.reference) {
+            fields = [
+              ...fields,
+              {
+                name: 'In reply to:',
+                value: (await message.channel.messages.fetch(message.reference.messageId)).content,
+              }
+            ]
+          }
+          return this.emit(
             'message',
             bridgeID,
             message.author.username,
