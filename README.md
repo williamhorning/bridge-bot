@@ -1,3 +1,18 @@
-very in progress guilded - discord bridge
+# Guilded to Discord bridge
 
-docs coming soontm
+## Commands
+
+> !bridge join <bridgeID> - Join a bridge  
+> !bridge leave <bridgeID> - Leave a bridge
+
+## Hosting
+
+### Docker
+
+Docker support is coming soon.
+
+### Manual Setup
+
+1. Run `npm install`
+2. Copy .env.example to .env and fill in the values
+3. Run `npm start`
