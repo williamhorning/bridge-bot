@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 import WebSocket from 'ws';
 
-import Discord, { MessageReaction, MessageSelectMenu } from 'discord.js';
+import Discord from 'discord.js';
 
 import {
   getGuildedMember,
@@ -21,11 +21,11 @@ const socket = new WebSocket('wss://api.guilded.gg/v1/websocket', {
 });
 
 import { KVNamespace } from '@miniflare/kv';
-import { MemoryStorage } from '@miniflare/storage-memory';
+import { FileStorage } from '@miniflare/storage-file';
 
-const discordChannel = new KVNamespace(new MemoryStorage());
+const discordChannel = new KVNamespace(new FileStorage("./discordChannel"));
 
-const guildedChannel = new KVNamespace(new MemoryStorage());
+const guildedChannel = new KVNamespace(new FileStorage("./guildedChannel"));
 
 client.login(process.env.DISCORD_TOKEN);
 
