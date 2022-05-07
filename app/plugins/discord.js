@@ -52,7 +52,7 @@ export default class DiscordBridge extends EventEmitter {
 
     this.client.login(process.env.DISCORD_TOKEN);
 
-    this.client.on('message', async (message) => {
+    this.client.on('messageCreate', async (message) => {
       const bridgeID = await kv.get(`discord-${message.channelId}`);
       if (message.webhookId || message.author.id == process.env.DISCORD_ID) {
         return;
@@ -145,7 +145,7 @@ export default class DiscordBridge extends EventEmitter {
               })
               .setDescription(content)
               .setFields(fields)
-              .setFooter('You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'),
+              .setFooter({text:'You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'}),
           ],
         });
       }
