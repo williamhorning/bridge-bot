@@ -144,14 +144,10 @@ export default class DiscordBridge extends EventEmitter {
                 iconURL: avatarURL,
               })
               .setDescription(content)
-              .setFields(fields),
+              .setFields(fields)
+              .setFooter('You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'),
           ],
         });
-        this.client.channels.cache
-          .get(webhookUrl)
-          .send(
-            'You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'
-          );
       }
     }
   }
