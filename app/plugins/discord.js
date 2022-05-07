@@ -88,8 +88,19 @@ export default class DiscordBridge extends EventEmitter {
               },
             ];
           }
-          if ((await message.channel.fetchWebhooks()).size < 1){
-            message.reply('Your message might not have been sent or you are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.');
+          if ((await message.channel.fetchWebhooks()).size < 1) {
+            if (
+              (await kv.get(`discord-${message.channelId}-webhooknotice`)) ==
+              undefined
+            ) {
+              message.reply(
+                'Your message might not have been sent or you are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'
+              );
+              await kv.put(
+                `discord-${message.channelId}-webhooknotice`,
+                '1'
+              );
+            }
           }
           return this.emit(
             'message',
@@ -132,11 +143,15 @@ export default class DiscordBridge extends EventEmitter {
                 name: username,
                 iconURL: avatarURL,
               })
-              .setDescription(description)
+              .setDescription(content)
               .setFields(fields),
           ],
         });
-        this.client.channels.cache.get(webhookUrl).send('You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.');
+        this.client.channels.cache
+          .get(webhookUrl)
+          .send(
+            'You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'
+          );
       }
     }
   }
