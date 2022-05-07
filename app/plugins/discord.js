@@ -17,7 +17,10 @@ async function commandHandler(message, kv) {
     } else {
       let webhook = await message.channel.createWebhook('bridge');
       console.log(webhook);
-      await kv.put(`${type}-${String(args)}`, JSON.stringify({id:webhook.id,token:webhook.token}));
+      await kv.put(
+        `${type}-${String(args)}`,
+        JSON.stringify({ id: webhook.id, token: webhook.token })
+      );
       await kv.put(`${type}-${message.channel.id}`, String(args));
       message.reply(`Joined bridge ID ${args}`);
     }
@@ -51,7 +54,7 @@ export default class DiscordBridge extends EventEmitter {
 
     this.client.on('message', async (message) => {
       const bridgeID = await kv.get(`discord-${message.channelId}`);
-      if (message.webhookId) {
+      if (message.webhookId || message.author.id == process.env.DISCORD_ID) {
         return;
       } else if (message.content.startsWith('!bridge')) {
         await commandHandler(message, kv);
@@ -85,6 +88,9 @@ export default class DiscordBridge extends EventEmitter {
               },
             ];
           }
+          if ((await message.channel.fetchWebhooks()).size < 1){
+            message.reply('Your message might not have been sent or you are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.');
+          }
           return this.emit(
             'message',
             bridgeID,
@@ -103,17 +109,35 @@ export default class DiscordBridge extends EventEmitter {
   async send(bridgeID, username, avatarURL, content, fields) {
     let webhookUrl = await this.kv.get(`discord-${bridgeID}`);
     if (webhookUrl) {
-      let webhook = JSON.parse(webhookUrl);
-      let webhookClient = new Discord.WebhookClient({id:webhook.id,token:webhook.token});
-      var files = fields[0]?.value.split('\n');
-      files?.shift()
-      if (!content) content = "​"
-      webhookClient.send({
-        content,
-        username,
-        avatarURL,
-        files
-      });
+      if (isNaN(webhookUrl)) {
+        let webhook = JSON.parse(webhookUrl);
+        let webhookClient = new Discord.WebhookClient({
+          id: webhook.id,
+          token: webhook.token,
+        });
+        var files = fields[0]?.value.split('\n');
+        files?.shift();
+        if (!content) content = '​';
+        webhookClient.send({
+          content,
+          username,
+          avatarURL,
+          files,
+        });
+      } else {
+        this.client.channels.cache.get(webhookUrl).send({
+          embeds: [
+            new Discord.MessageEmbed()
+              .setAuthor({
+                name: username,
+                iconURL: avatarURL,
+              })
+              .setDescription(description)
+              .setFields(fields),
+          ],
+        });
+        this.client.channels.cache.get(webhookUrl).send('You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.');
+      }
     }
   }
 }
