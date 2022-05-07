@@ -4,7 +4,37 @@ import Discord from 'discord.js'; // used for connection to Discord
 
 import EventEmitter from 'events';
 
-import commandHandler from '../commandHandler.js';
+async function commandHandler(message, kv) {
+  let type = 'discord';
+  let commands = message.content.split(' ');
+  commands.shift();
+  let command = commands[0];
+  commands.shift();
+  let args = commands.join(' ');
+  if (command == 'join') {
+    if (!args) {
+      message.reply('Please provide a bridge ID');
+    } else {
+      let webhook = await message.channel.createWebhook('bridge');
+      console.log(webhook);
+      await kv.put(`${type}-${String(args)}`, JSON.stringify({id:webhook.id,token:webhook.token}));
+      await kv.put(`${type}-${message.channel.id}`, String(args));
+      message.reply(`Joined bridge ID ${args}`);
+    }
+  } else if (command == 'leave') {
+    if (!args) {
+      message.reply('Please provide a bridge ID');
+    } else {
+      await kv.delete(`${type}-${String(args)}`);
+      await kv.delete(`${type}-${message.channel.id}`);
+      message.reply(`Left bridge ID ${args}`);
+    }
+  } else {
+    message.reply(
+      'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'
+    );
+  }
+}
 
 export default class DiscordBridge extends EventEmitter {
   constructor() {
@@ -21,10 +51,10 @@ export default class DiscordBridge extends EventEmitter {
 
     this.client.on('message', async (message) => {
       const bridgeID = await kv.get(`discord-${message.channelId}`);
-      if (message.author.id == process.env.DISCORD_ID) {
+      if (message.webhookId) {
         return;
       } else if (message.content.startsWith('!bridge')) {
-        return await commandHandler(kv, (str)=>{message.channel.send(str)}, message.channelId, 'discord', message.content);
+        await commandHandler(message, kv);
       } else {
         if (bridgeID) {
           let attachmentUrls = '';
@@ -47,9 +77,13 @@ export default class DiscordBridge extends EventEmitter {
               ...fields,
               {
                 name: 'In reply to:',
-                value: (await message.channel.messages.fetch(message.reference.messageId)).content,
-              }
-            ]
+                value: (
+                  await message.channel.messages.fetch(
+                    message.reference.messageId
+                  )
+                ).content,
+              },
+            ];
           }
           return this.emit(
             'message',
@@ -66,20 +100,19 @@ export default class DiscordBridge extends EventEmitter {
     });
   }
 
-  async send(bridgeID, name, iconURL, description, fields) {
-    let channelid = await this.kv.get(`discord-${bridgeID}`);
-    if (channelid) {
-      console.log(this)
-      this.client.channels.cache.get(channelid).send({
-        embeds: [
-          new Discord.MessageEmbed()
-            .setAuthor({
-              name,
-              iconURL,
-            })
-            .setDescription(description)
-            .setFields(fields),
-        ],
+  async send(bridgeID, username, avatarURL, content, fields) {
+    let webhookUrl = await this.kv.get(`discord-${bridgeID}`);
+    if (webhookUrl) {
+      let webhook = JSON.parse(webhookUrl);
+      let webhookClient = new Discord.WebhookClient({id:webhook.id,token:webhook.token});
+      var files = fields[0]?.value.split('\n');
+      files?.shift()
+      if (!content) content = "​"
+      webhookClient.send({
+        content,
+        username,
+        avatarURL,
+        files
       });
     }
   }
