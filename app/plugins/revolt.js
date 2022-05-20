@@ -6,8 +6,6 @@ import EventEmitter from 'events';
 
 import commandHandler from '../commandHandler.js';
 
-import { MessageEmbed } from 'discord.js';
-
 export default class RevoltBridge extends EventEmitter {
   constructor() {
     super();
@@ -36,11 +34,11 @@ export default class RevoltBridge extends EventEmitter {
           message.content
         );
       } else if (bridgeID) {
-        console.log(message);
         let attachmentUrls = '';
         let fields = [];
+        console.log(message.attachments)
         if (message.attachments) {
-          message.attachments.map(({ url }) => {
+          message.attachments.map(({ url }) => { // FIXME: this should actually work
             attachmentUrls = `${attachmentUrls}\n${url}`;
           });
           if (attachmentUrls) {
@@ -65,12 +63,11 @@ export default class RevoltBridge extends EventEmitter {
             },
           ];
         }
-        console.log('emit')
         return this.emit(
           'message',
           bridgeID,
           message.author.username,
-          message.author.avatarURL,
+          message.author.defaultAvatarURL, // FIXME: this should use the actual avatar, not the default, smh revolt.js is a pain in the ass
           message.content,
           fields
         );
@@ -80,40 +77,26 @@ export default class RevoltBridge extends EventEmitter {
     });
   }
 
-// TODO: fix this
+  // TODO: fix this
 
-  async send(bridgeID, name, iconURL, description, fields) {
+  async send(bridgeID, name, avatar, description, fields) {
     let channelid = await this.kv.get(`revolt-${bridgeID}`);
     if (channelid) {
       let str = '';
       if (fields[0]) str = `\n**${fields[0].name}**\n${fields[0].value}`;
       if (fields[1]) str = `${str}\n**${fields[0].name}**\n${fields[0].value}`;
-      console.log(
-        await (
-          await fetch(
-            `https://api.revolt.chat/channels/${channelid}/messages`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer: process.env.REVOLT_TOKEN`,
-                Accept: 'application/json',
-              },
-              body: JSON.stringify({
-                content: ' ',
-                embeds: [
-                  new MessageEmbed()
-                    .setAuthor({
-                      name,
-                      iconURL,
-                    })
-                    .setDescription(description + str),
-                ],
-              }),
-            }
-          )
-        ).json()
-      );
+      try {
+      (await (await this.client.channels.fetch(channelid)).sendMessage({
+        content: description + str,
+        masquerade: {
+          name,
+          avatar
+        },
+      }));
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 }
+
