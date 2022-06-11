@@ -57,10 +57,12 @@ export default class DiscordBridge extends EventEmitter {
         if (bridgeID) {
           let attachmentUrls = '';
           let fields = [];
+          
           if (message.attachments) {
             message.attachments.map(({ url }) => {
               attachmentUrls = `${attachmentUrls}\n${url}`;
             });
+            
             if (attachmentUrls) {
               fields = [
                 {
@@ -68,8 +70,9 @@ export default class DiscordBridge extends EventEmitter {
                   value: attachmentUrls,
                 },
               ];
-            }
-          }
+            };
+          };
+          
           if (message.reference) {
             fields = [
               ...fields,
@@ -82,7 +85,8 @@ export default class DiscordBridge extends EventEmitter {
                 ).content,
               },
             ];
-          }
+          };
+          
           if ((await message.channel.fetchWebhooks()).size < 1) {
             if (
               (await kv.get(`discord-${message.channelId}-webhooknotice`)) ==
@@ -93,7 +97,10 @@ export default class DiscordBridge extends EventEmitter {
               );
               await kv.put(`discord-${message.channelId}-webhooknotice`, '1');
             }
-          }
+          } else {
+            await kv.delete(`discord-${message.channelId}-webhooknotice`);
+          };
+          
           return this.emit(
             'message',
             bridgeID,
