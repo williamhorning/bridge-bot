@@ -1,6 +1,6 @@
 // this module is used to bridge discord to other chat services
 
-import Discord from 'discord.js'; // used for connection to Discord
+import Discord from 'discord.js';
 
 import EventEmitter from 'events';
 
@@ -12,7 +12,7 @@ export default class DiscordBridge extends EventEmitter {
     this.kv = kv;
 
     this.client = new Discord.Client({
-      intents: Object.values(Discord.Intents.FLAGS), // enable all intents
+      intents: Object.values(Discord.Intents.FLAGS),
     });
 
     this.client.login(process.env.DISCORD_TOKEN);

@@ -1,6 +1,6 @@
 // this module is used to bridge revolt to other chat services
 
-import Revolt from 'revolt.js'; // used for connection to revolt
+import Revolt from 'revolt.js';
 
 import EventEmitter from 'events';
 

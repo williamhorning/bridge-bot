@@ -1,6 +1,6 @@
 // this module is used to bridge guilded to other chat services
 
-import WebSocket from 'ws'; // used for websocket connection to Guilded
+import WebSocket from 'ws';
 
 import EventEmitter from 'events';
 
@@ -50,7 +50,7 @@ export default class GuildedBridge extends EventEmitter {
 
     this.socket = new WebSocket('wss://api.guilded.gg/v1/websocket', {
       headers: {
-        Authorization: `Bearer ${process.env.GUILDED_TOKEN}`, // Guilded token to get all message events
+        Authorization: `Bearer ${process.env.GUILDED_TOKEN}`,
       },
     });
 
