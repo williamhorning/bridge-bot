@@ -1,43 +1,8 @@
 // this module is used to bridge discord to other chat services
 
-import Discord from 'discord.js'; // used for connection to Discord
+import Discord from 'discord.js';
 
 import EventEmitter from 'events';
-
-async function commandHandler(message, kv) {
-  let type = 'discord';
-  let commands = message.content.split(' ');
-  commands.shift();
-  let command = commands[0];
-  commands.shift();
-  let args = commands.join(' ');
-  if (command == 'join') {
-    if (!args) {
-      message.reply('Please provide a bridge ID');
-    } else {
-      let webhook = await message.channel.createWebhook('bridge');
-      console.log(webhook);
-      await kv.put(
-        `${type}-${String(args)}`,
-        JSON.stringify({ id: webhook.id, token: webhook.token })
-      );
-      await kv.put(`${type}-${message.channel.id}`, String(args));
-      message.reply(`Joined bridge ID ${args}`);
-    }
-  } else if (command == 'leave') {
-    if (!args) {
-      message.reply('Please provide a bridge ID');
-    } else {
-      await kv.delete(`${type}-${String(args)}`);
-      await kv.delete(`${type}-${message.channel.id}`);
-      message.reply(`Left bridge ID ${args}`);
-    }
-  } else {
-    message.reply(
-      'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'
-    );
-  }
-}
 
 export default class DiscordBridge extends EventEmitter {
   constructor() {
@@ -47,7 +12,7 @@ export default class DiscordBridge extends EventEmitter {
     this.kv = kv;
 
     this.client = new Discord.Client({
-      intents: Object.values(Discord.Intents.FLAGS), // enable all intents
+      intents: Object.values(Discord.Intents.FLAGS),
     });
 
     this.client.login(process.env.DISCORD_TOKEN);
@@ -57,7 +22,37 @@ export default class DiscordBridge extends EventEmitter {
       if (message.webhookId || message.author.id == process.env.DISCORD_ID) {
         return;
       } else if (message.content.startsWith('!bridge')) {
-        await commandHandler(message, kv);
+        let commands = message.content.split(' ');
+        commands.shift();
+        let command = commands[0];
+        commands.shift();
+        let args = commands.join(' ');
+        if (command == 'join') {
+          if (!args) {
+            message.reply('Please provide a bridge ID');
+          } else {
+            let webhook = await message.channel.createWebhook('bridge');
+            console.log(webhook);
+            await kv.put(
+              `discord-${String(args)}`,
+              JSON.stringify({ id: webhook.id, token: webhook.token })
+            );
+            await kv.put(`discord-${message.channel.id}`, String(args));
+            message.reply(`Joined bridge ID ${args}`);
+          }
+        } else if (command == 'leave') {
+          if (!args) {
+            message.reply('Please provide a bridge ID');
+          } else {
+            await kv.delete(`discord-${String(args)}`);
+            await kv.delete(`discord-${message.channel.id}`);
+            message.reply(`Left bridge ID ${args}`);
+          }
+        } else {
+          message.reply(
+            'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'
+          );
+        }
       } else {
         if (bridgeID) {
           let attachmentUrls = '';
@@ -100,10 +95,7 @@ export default class DiscordBridge extends EventEmitter {
               message.reply(
                 'Your message might not have been sent or you are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'
               );
-              await kv.put(
-                `discord-${message.channelId}-webhooknotice`,
-                '1'
-              );
+              await kv.put(`discord-${message.channelId}-webhooknotice`, '1');
             }
           } else {
             await kv.delete(`discord-${message.channelId}-webhooknotice`);
@@ -152,7 +144,9 @@ export default class DiscordBridge extends EventEmitter {
               })
               .setDescription(content)
               .setFields(fields)
-              .setFooter({text:'You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.'}),
+              .setFooter({
+                text: 'You are using a webhookless bridge. Run `!bridge join` again to set up a webhook-based bridge.',
+              }),
           ],
         });
       }

@@ -4,6 +4,7 @@
     "@miniflare/storage-file": "^2.4.0",
     "discord.js": "^13.6.0",
     "dotenv": "^16.0.0",
+    "revolt.js": "^6.0.0-rc.24",
     "ws": "^8.5.0"
   },
   "type": "module",
