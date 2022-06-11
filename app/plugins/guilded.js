@@ -4,8 +4,6 @@ import WebSocket from 'ws'; // used for websocket connection to Guilded
 
 import EventEmitter from 'events';
 
-import commandHandler from '../commandHandler.js';
-
 async function sendGuildedMessage(channelid, content) {
   await (
     await fetch(
@@ -62,7 +60,31 @@ export default class GuildedBridge extends EventEmitter {
         if (t == 'ChatMessageCreated') {
           const bridgeID = await kv.get(`guilded-${d.message.channelId}`);
           if (d.message.content.startsWith('!bridge')) {
-            return await commandHandler(kv, async(str)=>{ await sendGuildedMessage(d.message.channelId, str)}, d.message.channelId, 'guilded', d.message.content);
+            let commands = d.message.content.split(' ');
+            commands.shift();
+            let command = commands[0];
+            let args = commands.join(' ');
+            if (command == 'join') {
+              if (!args) {
+                await sendGuildedMessage(d.message.channelId, 'Please provide a bridge ID');
+              } else {
+                await kv.put(`guilded-${String(args)}`, d.message.channelId);
+                await kv.put(`guilded-${d.message.channelId}`, String(args));
+                await sendGuildedMessage(d.message.channelId, `Joined bridge ID ${args}`);
+              }
+            } else if (command == 'leave') {
+              if (!args) {
+                await sendGuildedMessage(d.message.channelId, 'Please provide a bridge ID');
+              } else {
+                await kv.delete(`guilded-${String(args)}`);
+                await kv.delete(`guilded-${d.message.channelId}`);
+                await sendGuildedMessage(d.message.channelId, `Left bridge ID ${args}`);
+              }
+            } else {
+              await sendGuildedMessage(d.message.channelId,
+                'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'
+              );
+            }
           } else if (bridgeID) {
             if (d.message.createdBy == process.env.GUILDED_ID) return;
             try {

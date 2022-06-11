@@ -4,8 +4,6 @@ import Revolt from 'revolt.js'; // used for connection to revolt
 
 import EventEmitter from 'events';
 
-import commandHandler from '../commandHandler.js';
-
 export default class RevoltBridge extends EventEmitter {
   constructor() {
     super();
@@ -24,15 +22,31 @@ export default class RevoltBridge extends EventEmitter {
       } else if (typeof message.content !== 'string') {
         return;
       } else if (message.content.startsWith('!bridge')) {
-        return await commandHandler(
-          kv,
-          (str) => {
-            message.channel.sendMessage(str);
-          },
-          message.channel_id,
-          'revolt',
-          message.content
-        );
+        let commands = message.content.split(' ');
+        commands.shift();
+        let command = commands[0];
+        let args = commands.join(' ');
+        if (command == 'join') {
+          if (!args) {
+            message.channel.sendMessage('Please provide a bridge ID');
+          } else {
+            await kv.put(`revolt-${String(args)}`, message.channel_id);
+            await kv.put(`revolt-${message.channel_id}`, String(args));
+            message.channel.sendMessage(`Joined bridge ID ${args}`);
+          }
+        } else if (command == 'leave') {
+          if (!args) {
+            message.channel.sendMessage('Please provide a bridge ID');
+          } else {
+            await kv.delete(`revolt-${String(args)}`);
+            await kv.delete(`revolt-${message.channel_id}`);
+            message.channel.sendMessage(`Left bridge ID ${args}`);
+          }
+        } else {
+          message.channel.sendMessage(
+            'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'
+          );
+        }
       } else if (bridgeID) {
         let attachmentUrls = '';
         let fields = [];
