@@ -1,11 +1,14 @@
 import { config } from 'dotenv';
 import { KVNamespace } from '@miniflare/kv';
 import { FileStorage } from '@miniflare/storage-file';
+import WebSocket from 'ws';
 import DiscordBridge from './plugins/discord.js';
 import GuildedBridge from './plugins/guilded.js';
 import RevoltBridge from './plugins/revolt.js';
 
 config({ path: '../.env' });
+
+globalThis.WebSocket = WebSocket;
 
 const kv = new KVNamespace(new FileStorage('../kv'));
 

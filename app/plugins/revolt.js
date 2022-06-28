@@ -50,10 +50,9 @@ export default class RevoltBridge extends EventEmitter {
       } else if (bridgeID) {
         let attachmentUrls = '';
         let fields = [];
-        console.log(message.attachments)
         if (message.attachments) {
-          message.attachments.map(({ url }) => { // FIXME: this should actually work
-            attachmentUrls = `${attachmentUrls}\n${url}`;
+          message.attachments.map((item) => {
+            attachmentUrls = `${attachmentUrls}\nhttps://autumn.revolt.chat/attachments/${item._id}`;
           });
           if (attachmentUrls) {
             fields = [

@@ -48,6 +48,9 @@ export default class DiscordBridge extends EventEmitter {
             await kv.delete(`discord-${message.channel.id}`);
             message.reply(`Left bridge ID ${args}`);
           }
+        } else if (command == 'die') {
+          message.reply('hey there, bridge bot will will exit soon');
+          process.exit(1);
         } else {
           message.reply(
             'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'

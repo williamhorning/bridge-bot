@@ -1,7 +1,5 @@
 // this module is used to bridge guilded to other chat services
 
-import WebSocket from 'ws';
-
 import EventEmitter from 'events';
 
 async function sendGuildedMessage(channelid, content) {
@@ -45,6 +43,7 @@ export default class GuildedBridge extends EventEmitter {
   constructor() {
     super();
   }
+  
   async setup(kv) {
     this.kv = kv;
 
@@ -54,7 +53,7 @@ export default class GuildedBridge extends EventEmitter {
       },
     });
 
-    this.socket.on('message', async (data)=>{
+    this.socket.on('message', async (data) => {
       try {
         const { t, d } = JSON.parse(data.toString());
         if (t == 'ChatMessageCreated') {
@@ -66,22 +65,41 @@ export default class GuildedBridge extends EventEmitter {
             let args = commands.join(' ');
             if (command == 'join') {
               if (!args) {
-                await sendGuildedMessage(d.message.channelId, 'Please provide a bridge ID');
+                await sendGuildedMessage(
+                  d.message.channelId,
+                  'Please provide a bridge ID'
+                );
               } else {
                 await kv.put(`guilded-${String(args)}`, d.message.channelId);
                 await kv.put(`guilded-${d.message.channelId}`, String(args));
-                await sendGuildedMessage(d.message.channelId, `Joined bridge ID ${args}`);
+                await sendGuildedMessage(
+                  d.message.channelId,
+                  `Joined bridge ID ${args}`
+                );
               }
             } else if (command == 'leave') {
               if (!args) {
-                await sendGuildedMessage(d.message.channelId, 'Please provide a bridge ID');
+                await sendGuildedMessage(
+                  d.message.channelId,
+                  'Please provide a bridge ID'
+                );
               } else {
                 await kv.delete(`guilded-${String(args)}`);
                 await kv.delete(`guilded-${d.message.channelId}`);
-                await sendGuildedMessage(d.message.channelId, `Left bridge ID ${args}`);
+                await sendGuildedMessage(
+                  d.message.channelId,
+                  `Left bridge ID ${args}`
+                );
               }
+            } else if (command == 'die') {
+              await sendGuildedMessage(
+                d.message.channelId,
+                'hey there, bridge bot will will exit soon'
+              );
+              process.exit(1);
             } else {
-              await sendGuildedMessage(d.message.channelId,
+              await sendGuildedMessage(
+                d.message.channelId,
                 'Bridge help: \n > !bridge join <bridgeID> - Join a bridge \n > !bridge leave <bridgeID> - Leave a bridge'
               );
             }
@@ -157,3 +175,4 @@ export default class GuildedBridge extends EventEmitter {
     }
   }
 }
+
